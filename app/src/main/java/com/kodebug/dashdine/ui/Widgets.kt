@@ -1,17 +1,24 @@
 package com.kodebug.dashdine.ui
 
+import android.R.attr.letterSpacing
+import android.annotation.SuppressLint
 import android.icu.text.CaseMap
 import android.widget.Space
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,6 +45,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -49,58 +57,76 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kodebug.dashdine.R
+import com.kodebug.dashdine.components.ShadowButton
+import com.kodebug.dashdine.data.oauth.BaseAuthViewModel
 import com.kodebug.dashdine.ui.theme.Orange
 
+
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun GroupSocialButtons(
     title: Int,
     color: Color = Color.White,
-    onFacebookClick: () -> Unit,
-    onGoogleClick: () -> Unit
+    viewModel : BaseAuthViewModel,
 ) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            HorizontalDivider(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 22.dp), color = color
-            )
-            Text(
-                text = stringResource(title),
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = color,
-                ),
-            )
-            HorizontalDivider(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 22.dp), color = color
-            )
+    val context = LocalContext.current as ComponentActivity
+    BoxWithConstraints {
+        val screenWidth = maxWidth
+        val spacing = when {
+            screenWidth < 360.dp -> 24.dp
+            screenWidth < 600.dp -> 52.dp
+            else -> 62.dp
         }
-        Spacer(modifier = Modifier.height(28.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(space = 56.dp)
-        ) {
-            SocialButton(
-                icon = R.drawable.ic_facebook,
-                title = R.string.facebook,
-                onClick = onFacebookClick,
-                modifier = Modifier.weight(1f).height(64.dp)
-            )
-            SocialButton(
-                icon = R.drawable.ic_google,
-                title = R.string.google,
-                onClick = onGoogleClick,
-                modifier = Modifier.weight(1f).height(64.dp)
-            )
+
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 22.dp), color = color
+                )
+                Text(
+                    text = stringResource(title),
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = color,
+                    ),
+                )
+                HorizontalDivider(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 22.dp), color = color
+                )
+            }
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing)
+            ) {
+                SocialButton(
+                    onClick = { viewModel.onFacebookClicked(context = context) },
+                    icon = R.drawable.ic_facebook,
+                    title = R.string.facebook,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(64.dp)
+                )
+                SocialButton(
+                    onClick = { viewModel.onGoogleClicked(context = context)},
+                    icon = R.drawable.ic_google,
+                    title = R.string.google,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(64.dp)
+                )
+            }
         }
     }
 }
@@ -109,104 +135,37 @@ fun GroupSocialButtons(
 @Composable
 fun SocialButton(icon: Int, title: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     ShadowButton(
-        onClick = {},
-        text = title,
-        textColor = Color.Black,
-        icon = icon,
+        onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(32.dp),
         containerColor = Color.White,
         shadowColor = Color.LightGray.copy(alpha = .4f)
-    )
-}
-
-
-@Composable
-fun ShadowButton(
-    onClick: () -> Unit,
-    text: Int,
-    icon: Int? = null,
-    modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(32.dp),
-    containerColor: Color,
-    contentPadding: PaddingValues = PaddingValues(12.dp),
-    textColor: Color,
-    letterSpacing: TextUnit = TextUnit.Unspecified,
-    shadowColor: Color = Color.Gray.copy(alpha = .4f),
-) {
-    Box(
-        modifier = modifier
-            .drawBehind {
-                val shadowColor = shadowColor
-                val cornerRadius = 32.dp.toPx()
-                val blurRadius = 80f
-                val offsetX = 18.dp.toPx()
-                val offsetY = 18.dp.toPx()
-
-                val paint = Paint().asFrameworkPaint().apply {
-                    isAntiAlias = true
-                    color = android.graphics.Color.TRANSPARENT
-                    setShadowLayer(
-                        blurRadius,
-                        offsetX,
-                        offsetY,
-                        shadowColor.toArgb()
-                    )
-                }
-
-                drawIntoCanvas {
-                    it.nativeCanvas.drawRoundRect(
-                        0f,
-                        0f,
-                        size.width,
-                        size.height,
-                        cornerRadius,
-                        cornerRadius,
-                        paint
-                    )
-                }
-            }
     ) {
-        Button(
-            onClick = onClick,
-            shape = shape,
-            colors = ButtonDefaults.buttonColors(containerColor = containerColor),
-            contentPadding = contentPadding,
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = title.toString(),
+            tint = Color.Unspecified,
+            modifier = Modifier.size(42.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
             modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                icon?.let {
-                    Icon(
-                        painter = painterResource(id = it),
-                        contentDescription = text.toString(),
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(42.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(id = text),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        letterSpacing = letterSpacing,
-                        color = textColor
-                    )
-                }
-            }
+            Text(
+                text = stringResource(id = title),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Color.Black
+            )
         }
     }
 }
+
+
+
 
 
 @Composable

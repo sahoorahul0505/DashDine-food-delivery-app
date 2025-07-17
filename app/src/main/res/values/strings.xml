@@ -5,7 +5,7 @@
     <string name="dashdine_desc">Your favourite foods delivered \nfast at your door.</string>
     <string name="already_have_account">Already have an account?</string>
     <string name="sign_in">Sign In</string>
-    <string name="sign_in_with_email">Sign in with email</string>
+    <string name="sign_up_with_email">Sign up with email</string>
     <string name="facebook">FACEBOOK</string>
     <string name="google">GOOGLE</string>
     <string name="sign_in_title">Sign in with</string>
@@ -19,4 +19,8 @@
     <string name="dont_have_account">Dont\'t have an account?</string>
     <string name="forgot_password">Forgot password?</string>
     <string name="login_button">LOGIN</string>
+
+    <string name="facebook_app_id">past your facebook developer app id</string>
+    <string name="fb_login_protocol_scheme">fb1234</string>
+    <string name="facebook_client_token">your facebook client id or secret id</string>
 </resources>

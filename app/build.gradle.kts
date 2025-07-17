@@ -5,6 +5,7 @@ plugins {
 
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 android {
@@ -60,6 +61,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     implementation("com.google.dagger:hilt-android:2.56.2")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     ksp("com.google.dagger:hilt-android-compiler:2.56.2")
 
     // retrofit
@@ -67,5 +69,15 @@ dependencies {
 // gson converter
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    implementation("androidx.navigation:navigation-compose:2.9.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
+    implementation ("com.facebook.android:facebook-android-sdk:18.0.3")
+
 
 }

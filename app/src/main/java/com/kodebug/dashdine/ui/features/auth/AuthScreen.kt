@@ -1,58 +1,91 @@
 package com.kodebug.dashdine.ui.features.auth
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.kodebug.dashdine.R
 import com.kodebug.dashdine.ui.GroupSocialButtons
+import com.kodebug.dashdine.ui.navigation.Auth
+import com.kodebug.dashdine.ui.navigation.Home
+import com.kodebug.dashdine.ui.navigation.Login
+import com.kodebug.dashdine.ui.navigation.SignUp
 import com.kodebug.dashdine.ui.theme.NightBlueDark
 import com.kodebug.dashdine.ui.theme.Orange
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun AuthScreen(modifier: Modifier = Modifier) {
+fun AuthScreen(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    viewModel: AuthViewModel = hiltViewModel()
+) {
+
+    LaunchedEffect(true) {
+        viewModel.navigationEvent.collectLatest { event ->
+            when (event) {
+                is AuthViewModel.AuthNavigationEvent.NavigationToHome -> {
+                    navController.navigate(Home) {
+                        popUpTo(Auth) {
+                            inclusive = true
+                        }
+                    }
+                }
+
+                is AuthViewModel.AuthNavigationEvent.NavigationToLogin -> {
+                    navController.navigate(Login) {
+//                        popUpTo(Auth) {
+//                            inclusive = true
+//                        }
+                    }
+                }
+
+                is AuthViewModel.AuthNavigationEvent.NavigationToSignUp -> {
+                    navController.navigate(SignUp) {
+//                        popUpTo(Auth) {
+//                            inclusive = true
+//                        }
+                    }
+                }
+            }
+        }
+    }
     val imageSize = remember {
         mutableStateOf(IntSize.Zero)
     }
@@ -74,6 +107,7 @@ fun AuthScreen(modifier: Modifier = Modifier) {
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
             modifier = modifier
+                .fillMaxSize()
                 .onGloballyPositioned {
                     imageSize.value = it.size
                 }
@@ -89,7 +123,7 @@ fun AuthScreen(modifier: Modifier = Modifier) {
             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Orange),
             modifier = modifier
                 .align(alignment = Alignment.TopEnd)
-                .padding(top = 50.dp, end = 16.dp)
+                .padding(top = 50.dp, end = 30.dp)
         ) {
             Text(text = stringResource(id = R.string.skip))
         }
@@ -101,28 +135,24 @@ fun AuthScreen(modifier: Modifier = Modifier) {
         {
             Text(
                 text = stringResource(id = R.string.welcome_to),
-                    fontSize = 54.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                )
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+            )
 
-            Spacer(modifier = modifier.height(10.dp))
+//            Spacer(modifier = modifier.height(6.dp))
             Text(
                 text = stringResource(id = R.string.app_name),
-
-                    fontSize = 54.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Orange
-
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold,
+                color = Orange
             )
-            Spacer(modifier = modifier.height(18.dp))
+            Spacer(modifier = modifier.height(12.dp))
             Text(
                 text = stringResource(id = R.string.dashdine_desc),
-
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = NightBlueDark
-
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Normal,
+                color = NightBlueDark
             )
         }
         Column(
@@ -131,11 +161,13 @@ fun AuthScreen(modifier: Modifier = Modifier) {
                 .align(alignment = Alignment.BottomCenter)
                 .padding(30.dp)
         ) {
-            Spacer(modifier = modifier.height(24.dp))
-            GroupSocialButtons( title = R.string.sign_in_title,onGoogleClick = {}, onFacebookClick = {})
+//            Spacer(modifier = modifier.height(24.dp))
+            GroupSocialButtons(title = R.string.sign_in_title, viewModel = viewModel)
             Spacer(modifier = modifier.height(32.dp))
             Button(
-                onClick = {},
+                onClick = {
+                    viewModel.onSignUpClick()
+                },
                 modifier = modifier
                     .fillMaxWidth()
                     .height(64.dp),
@@ -146,32 +178,34 @@ fun AuthScreen(modifier: Modifier = Modifier) {
                 border = BorderStroke(width = 1.dp, color = Color.White)
             ) {
                 Text(
-                    text = stringResource(R.string.sign_in_with_email),
-                        fontSize = 18.sp,
-                        color = Color.White,
-                    )
+                    text = stringResource(R.string.sign_up_with_email),
+                    fontSize = 18.sp,
+                    color = Color.White,
+                )
 
             }
             Spacer(modifier = modifier.height(12.dp))
             TextButton(
-                onClick = {}
+                onClick = {
+                    viewModel.onLoginClick()
+                }
             ) {
                 Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Text(
                         text = stringResource(R.string.already_have_account),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.White
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.White
 
                     )
                     Spacer(modifier = modifier.width(6.dp))
                     Text(
                         text = stringResource(R.string.sign_in),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.White,
-                            textDecoration = TextDecoration.Underline
-                        )
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.White,
+                        textDecoration = TextDecoration.Underline
+                    )
 
                 }
 
@@ -184,5 +218,5 @@ fun AuthScreen(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 private fun AuthScreenPreview() {
-    AuthScreen()
+    AuthScreen(navController = rememberNavController())
 }
