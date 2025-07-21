@@ -1,12 +1,17 @@
 package com.kodebug.dashdine.ui.features.auth.signup
 
+import android.util.Patterns
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kodebug.dashdine.data.DashDineApiService
+import com.kodebug.dashdine.data.DashDineSession
 import com.kodebug.dashdine.data.models.SignUpRequest
 import com.kodebug.dashdine.data.oauth.BaseAuthViewModel
+import com.kodebug.dashdine.data.remote.ApiResponse
+import com.kodebug.dashdine.data.remote.safeApiCall
+import com.kodebug.dashdine.ui.features.auth.AuthViewModel.AuthNavigationEvent
 import com.kodebug.dashdine.ui.features.auth.login.LoginViewModel.LoginEvent
 import com.kodebug.dashdine.ui.features.auth.login.LoginViewModel.LoginNavigationEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +24,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SignUpViewModel @Inject constructor(override val apiService: DashDineApiService) :
+class SignUpViewModel @Inject constructor(
+    override val apiService: DashDineApiService,
+    val session: DashDineSession
+) :
     BaseAuthViewModel(apiService) {
 
     private val _uiState = MutableStateFlow<SignUpEvent>(SignUpEvent.Nothing)
@@ -51,22 +59,76 @@ class SignUpViewModel @Inject constructor(override val apiService: DashDineApiSe
 
     fun onSignUpClick() {
         viewModelScope.launch {
+
+            if (name.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty()) {
+                error = "Insufficient Details"
+                errorDescription = "Please fill all the details"
+                _uiState.value = SignUpEvent.Error
+                _navigationEvent.emit(SignupNavigationEvent.ShowErrorDialog)
+                return@launch
+            }
+
+            if (Patterns.EMAIL_ADDRESS.matcher(_email.value).matches().not()) {
+                error = "Invalid Email Format"
+                errorDescription = "Please enter a valid email address."
+                _uiState.value = SignUpEvent.Error
+                _navigationEvent.emit(SignupNavigationEvent.ShowErrorDialog)
+                return@launch
+            }
             _uiState.value = SignUpEvent.Loading
-            try {
-                val response = apiService.signUp(
+
+            val response = safeApiCall {
+                apiService.signUp(
                     SignUpRequest(
                         name = _name.value,
                         email = _email.value,
                         password = _password.value
                     )
                 )
-                if (response.token.isNotEmpty()) {
+            }
+            when (response) {
+                is ApiResponse.Success -> {
+                    session.storeToken(response.data.token)
                     _uiState.value = SignUpEvent.Success
                     _navigationEvent.emit(SignupNavigationEvent.NavigationToHome)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _uiState.value = SignUpEvent.Error
+
+                else -> {
+                    val errorResponse = (response as? ApiResponse.Error)?.code ?: 0
+                    error = ""
+                    errorDescription = ""
+                    when (errorResponse) {
+                        400 -> {
+                            error = "Invalid Credential"
+                            errorDescription = "Please enter correct details"
+                        }
+
+                        409 -> {
+                            error = "User Already Exists"
+                            errorDescription = "User with this email already exists"
+                        }
+
+                        500 -> {
+                            error = "Server Error / Email Already Exist"
+                            errorDescription = "Something went wrong on our end. \nPlease try again later."
+                        }
+
+                        503 -> {
+                            error = "Service Unavailable"
+                            errorDescription = "The server is temporarily unavailable. \nPlease try again later."
+                        }
+
+                        else -> {
+                            error = "Sign Up Failed"
+                            errorDescription =
+                                "An unexpected error occurred. \n Please check your internet connection."
+                        }
+
+                    }
+                    _uiState.value = SignUpEvent.Error
+                    _navigationEvent.emit(SignupNavigationEvent.ShowErrorDialog)
+//                    return@launch
+                }
             }
         }
     }
@@ -91,20 +153,27 @@ class SignUpViewModel @Inject constructor(override val apiService: DashDineApiSe
         }
     }
 
-    override fun onGoogleError(mag: String) {
+    override fun onGoogleError(msg: String) {
         viewModelScope.launch {
+            error = "Google Sign In Failed"
+            errorDescription = msg
             _uiState.value = SignUpEvent.Error
+            _navigationEvent.emit(SignupNavigationEvent.ShowErrorDialog)
         }
     }
 
-    override fun onFacebookError(mag: String) {
+    override fun onFacebookError(msg: String) {
         viewModelScope.launch {
+            error = "facebook Sign In Failed"
+            errorDescription = msg
             _uiState.value = SignUpEvent.Error
+            _navigationEvent.emit(SignupNavigationEvent.ShowErrorDialog)
         }
     }
 
     override fun onSocialLoginSuccess(token: String) {
         viewModelScope.launch {
+            session.storeToken(token)
             _uiState.value = SignUpEvent.Success
             _navigationEvent.emit(SignupNavigationEvent.NavigationToHome)
         }
@@ -114,6 +183,7 @@ class SignUpViewModel @Inject constructor(override val apiService: DashDineApiSe
     sealed class SignupNavigationEvent {
         object NavigationToLogin : SignupNavigationEvent()
         object NavigationToHome : SignupNavigationEvent()
+        object ShowErrorDialog : SignupNavigationEvent()
     }
 
     sealed class SignUpEvent {

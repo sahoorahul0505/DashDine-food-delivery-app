@@ -20,7 +20,8 @@
     <string name="forgot_password">Forgot password?</string>
     <string name="login_button">LOGIN</string>
 
-    <string name="facebook_app_id">past your facebook developer app id</string>
+    <string name="facebook_app_id">1887325008711718</string>
     <string name="fb_login_protocol_scheme">fb1234</string>
-    <string name="facebook_client_token">your facebook client id or secret id</string>
+    <string name="facebook_client_token">43791cadc46947a1f061e4eec18e1a66</string>
+    <string name="ok">Ok</string>
 </resources>

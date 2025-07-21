@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
 import android.icu.text.CaseMap
 import android.widget.Space
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +39,7 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -45,6 +48,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +56,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -62,12 +67,12 @@ import com.kodebug.dashdine.data.oauth.BaseAuthViewModel
 import com.kodebug.dashdine.ui.theme.Orange
 
 
-@SuppressLint("UnusedBoxWithConstraintsScope")
+@SuppressLint("UnusedBoxWithConstraintsScope", "ContextCastToActivity")
 @Composable
 fun GroupSocialButtons(
     title: Int,
     color: Color = Color.White,
-    viewModel : BaseAuthViewModel,
+    viewModel: BaseAuthViewModel,
 ) {
     val context = LocalContext.current as ComponentActivity
     BoxWithConstraints {
@@ -119,7 +124,7 @@ fun GroupSocialButtons(
                         .height(64.dp)
                 )
                 SocialButton(
-                    onClick = { viewModel.onGoogleClicked(context = context)},
+                    onClick = { viewModel.onGoogleClicked(context = context) },
                     icon = R.drawable.ic_google,
                     title = R.string.google,
                     modifier = Modifier
@@ -165,7 +170,54 @@ fun SocialButton(icon: Int, title: Int, onClick: () -> Unit, modifier: Modifier 
 }
 
 
-
+@Composable
+fun DashDineErrorDialogBox(title: String, description: String, onDismiss: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = Color.White)
+            .clip(shape = RoundedCornerShape(16.dp))
+            .padding(horizontal = 20.dp, vertical = 30.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_error_icon),
+            contentDescription = "error",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(28.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    spotColor = Color.Red,
+                    ambientColor = Color.Red,
+                )
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        Text(
+            text = "${title}!",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(text = description, fontWeight = FontWeight.Normal, textAlign = TextAlign.Center, color = Color.Gray)
+        Spacer(modifier = Modifier.size(16.dp))
+        ShadowButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .fillMaxWidth(.6f)
+                .height(42.dp),
+//            shape = RoundedCornerShape(32.dp),
+            containerColor = Color.White,
+//            shadowColor = Orange.copy(alpha = .4f),
+            content = {
+                Text(text = stringResource(id = R.string.ok), color = Color.Black)
+            },
+        )
+    }
+}
 
 
 @Composable
@@ -233,4 +285,15 @@ fun DashDineTextField(
             colors = colors
         )
     }
+}
+
+
+@Composable
+@Preview(showBackground = true)
+fun DashDineDialogBoxPreview() {
+    DashDineErrorDialogBox(
+        title = "Error",
+        description = "Something went wrong",
+        onDismiss = {}
+    )
 }

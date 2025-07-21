@@ -1,5 +1,6 @@
 package com.kodebug.dashdine.ui.features.auth.signup
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -27,19 +28,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +70,7 @@ import androidx.navigation.compose.rememberNavController
 import com.kodebug.dashdine.R
 import com.kodebug.dashdine.components.BouncingDots
 import com.kodebug.dashdine.components.ShadowButton
+import com.kodebug.dashdine.ui.DashDineErrorDialogBox
 import com.kodebug.dashdine.ui.DashDineTextField
 import com.kodebug.dashdine.ui.GroupSocialButtons
 import com.kodebug.dashdine.ui.navigation.Auth
@@ -71,9 +78,13 @@ import com.kodebug.dashdine.ui.navigation.Home
 import com.kodebug.dashdine.ui.navigation.Login
 import com.kodebug.dashdine.ui.navigation.SignUp
 import com.kodebug.dashdine.ui.theme.Orange
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     modifier: Modifier = Modifier,
@@ -86,11 +97,28 @@ fun SignUpScreen(
     val errorMessage = remember { mutableStateOf<String?>(null) }
     val loading = remember { mutableStateOf(false) }
 
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
     val uiState = viewModel.uiState.collectAsState()
     when (uiState.value) {
         SignUpViewModel.SignUpEvent.Error -> {
             loading.value = false
             errorMessage.value = "Failed to sign up"
+            LaunchedEffect(true) {
+                viewModel.navigationEvent.collectLatest { event ->
+                    when (event) {
+                        is SignUpViewModel.SignupNavigationEvent.ShowErrorDialog -> {
+                            scope.launch {
+                                sheetState.show()
+                            }
+                        }
+                        else -> {
+
+                        }
+                    }
+                }
+            }
         }
 
         SignUpViewModel.SignUpEvent.Loading -> {
@@ -115,16 +143,19 @@ fun SignUpScreen(
                         }
                     }
                 }
-                 is SignUpViewModel.SignupNavigationEvent.NavigationToLogin -> {
-                     navController.navigate(Login){
-                         popUpTo(SignUp){
-                             inclusive = true
-                         }
-                     }
-                 }
 
-                else -> {
+                is SignUpViewModel.SignupNavigationEvent.NavigationToLogin -> {
+                    navController.navigate(Login) {
+                        popUpTo(SignUp) {
+                            inclusive = true
+                        }
+                    }
+                }
 
+                is SignUpViewModel.SignupNavigationEvent.ShowErrorDialog -> {
+                    scope.launch {
+                        sheetState.show()
+                    }
                 }
             }
         }
@@ -155,8 +186,8 @@ fun SignUpScreen(
             {
                 FilledIconButton(
                     onClick = {
-                        navController.navigate(Auth){
-                            popUpTo(Auth){
+                        navController.navigate(Auth) {
+                            popUpTo(Auth) {
                                 inclusive = true
                             }
                         }
@@ -339,6 +370,25 @@ fun SignUpScreen(
                 title = R.string.sign_up_title,
                 color = Color.Black,
                 viewModel = viewModel
+            )
+        }
+    }
+
+    if (sheetState.isVisible) {
+        ModalBottomSheet(onDismissRequest = {
+            scope.launch {
+                sheetState.hide()
+            }
+        }, sheetState = sheetState, containerColor = Color.White, tonalElevation = 10.dp) {
+            DashDineErrorDialogBox(
+                title = viewModel.error,
+                description = viewModel.errorDescription,
+                onDismiss = {
+                    scope.launch {
+                        sheetState.hide()
+//                        showDialog = false
+                    }
+                }
             )
         }
     }

@@ -23,18 +23,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,15 +62,19 @@ import androidx.navigation.PopUpToBuilder
 import com.kodebug.dashdine.R
 import com.kodebug.dashdine.components.BouncingDots
 import com.kodebug.dashdine.components.ShadowButton
+import com.kodebug.dashdine.ui.DashDineErrorDialogBox
 import com.kodebug.dashdine.ui.DashDineTextField
 import com.kodebug.dashdine.ui.GroupSocialButtons
+import com.kodebug.dashdine.ui.features.auth.signup.SignUpViewModel
 import com.kodebug.dashdine.ui.navigation.Auth
 import com.kodebug.dashdine.ui.navigation.Home
 import com.kodebug.dashdine.ui.navigation.Login
 import com.kodebug.dashdine.ui.navigation.SignUp
 import com.kodebug.dashdine.ui.theme.Orange
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
@@ -78,10 +88,27 @@ fun LoginScreen(
     val loading = remember { mutableStateOf(false) }
     val uiState = viewModel.uiState.collectAsState()
 
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
     when (uiState.value) {
         LoginViewModel.LoginEvent.Error -> {
             loading.value = false
             errorMessage.value = "Failed to login"
+            LaunchedEffect(true) {
+                viewModel.navigationEvent.collectLatest { event ->
+                    when (event) {
+                        is LoginViewModel.LoginNavigationEvent.ShowErrorDialog -> {
+                            scope.launch {
+                                sheetState.show()
+                            }
+                        }
+                        else -> {
+
+                        }
+                    }
+                }
+            }
         }
 
         LoginViewModel.LoginEvent.Loading -> {
@@ -111,6 +138,12 @@ fun LoginScreen(
                         popUpTo(Login) {
                             inclusive = true
                         }
+                    }
+                }
+
+                is LoginViewModel.LoginNavigationEvent.ShowErrorDialog -> {
+                    scope.launch {
+                        sheetState.show()
                     }
                 }
             }
@@ -219,6 +252,7 @@ fun LoginScreen(
                     }
 
                 },
+                visualTransformation = PasswordVisualTransformation(),
                 modifier = modifier
                     .fillMaxWidth()
                     .height(68.dp)
@@ -297,12 +331,36 @@ fun LoginScreen(
                 }
             }
             Spacer(modifier = modifier.height(12.dp))
-            val context = LocalContext.current
             GroupSocialButtons(
                 color = Color.Black,
                 title = R.string.sign_in_title,
                 viewModel = viewModel
-                )
+            )
+        }
+    }
+    if (sheetState.isVisible) {
+        ModalBottomSheet(onDismissRequest = {
+            scope.launch {
+                sheetState.hide()
+            }
+        }, sheetState = sheetState, containerColor = Color.White, tonalElevation = 10.dp) {
+            DashDineErrorDialogBox(
+                title = viewModel.error,
+                description = viewModel.errorDescription,
+                onDismiss = {
+                    scope.launch {
+                        sheetState.hide()
+//                        showDialog = false
+                    }
+                }
+            )
+        }
+    }
+
+    BackHandler(enabled = sheetState.isVisible) {
+        scope.launch {
+            sheetState.hide()
+//            showDialog = false
         }
     }
 }

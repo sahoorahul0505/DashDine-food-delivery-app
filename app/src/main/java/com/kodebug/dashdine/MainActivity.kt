@@ -34,13 +34,18 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.kodebug.dashdine.data.DashDineApiService
+import com.kodebug.dashdine.data.DashDineSession
 import com.kodebug.dashdine.ui.features.auth.AuthScreen
 import com.kodebug.dashdine.ui.features.auth.login.LoginScreen
 import com.kodebug.dashdine.ui.features.auth.signup.SignUpScreen
+import com.kodebug.dashdine.ui.features.home.HomeScreen
+import com.kodebug.dashdine.ui.features.restaurant_detail.RestaurantsDetailScreen
 import com.kodebug.dashdine.ui.navigation.Auth
 import com.kodebug.dashdine.ui.navigation.Home
 import com.kodebug.dashdine.ui.navigation.Login
+import com.kodebug.dashdine.ui.navigation.RestaurantDetail
 import com.kodebug.dashdine.ui.navigation.SignUp
 import com.kodebug.dashdine.ui.theme.DashDineTheme
 import com.kodebug.dashdine.ui.theme.Orange
@@ -56,7 +61,10 @@ class MainActivity : ComponentActivity() {
     var showSplashScreen = true
 
     //    @Inject
-//    late init var dashDineApiService: DashDineApiService
+//    lateinit var dashDineApiService: DashDineApiService
+    @Inject
+    lateinit var dashDineSession: DashDineSession
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().apply {
             setKeepOnScreenCondition {
@@ -97,7 +105,8 @@ class MainActivity : ComponentActivity() {
                     Box(modifier = Modifier.padding(innerPadding))
                     val navController = rememberNavController()
                     NavHost(
-                        navController = navController, startDestination = Auth,
+                        navController = navController,
+                        startDestination = if (dashDineSession.getToken() != null) Home else Auth,
                         enterTransition = {
                             slideIntoContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Start,
@@ -133,10 +142,16 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(navController = navController)
                         }
                         composable<Home> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) { Text(text = "Home") }
+                            HomeScreen(navController = navController)
+                        }
+                        composable<RestaurantDetail> {
+                            val route = it.toRoute<RestaurantDetail>()
+                            RestaurantsDetailScreen(
+                                navController = navController,
+                                restaurantID = route.restaurantID,
+                                imageUrl = route.restaurantImageUrls,
+                                name = route.restaurantName
+                            )
                         }
                     }
 

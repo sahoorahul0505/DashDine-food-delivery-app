@@ -13,3 +13,6 @@ object Login
 
 @Serializable
 object Home
+
+@Serializable
+data class RestaurantDetail(val restaurantID: String,val restaurantName: String, val restaurantImageUrls: String )

@@ -1,8 +1,10 @@
 package com.kodebug.dashdine.data
 
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -24,5 +26,10 @@ object NetworkModule {
     @Provides
     fun provideApiService(retrofit: Retrofit) : DashDineApiService {
         return retrofit.create(DashDineApiService::class.java)
+    }
+
+    @Provides
+    fun provideDashDineSession(@ApplicationContext context: Context) : DashDineSession {
+        return DashDineSession(context)
     }
 }
