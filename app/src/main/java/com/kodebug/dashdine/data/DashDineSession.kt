@@ -1,6 +1,7 @@
 package com.kodebug.dashdine.data
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 
 class DashDineSession(val context: Context) {

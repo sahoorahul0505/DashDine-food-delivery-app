@@ -29,6 +29,7 @@ fun ShadowButton(
     containerColor: Color,
     contentPadding: PaddingValues = PaddingValues(12.dp),
     shadowColor: Color = Color.Gray.copy(alpha = .4f),
+    enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
     Box(
@@ -66,15 +67,16 @@ fun ShadowButton(
     ) {
         Button(
             onClick = onClick,
+            enabled = enabled,
             shape = shape,
-            colors = ButtonDefaults.buttonColors(containerColor = containerColor),
+            colors = ButtonDefaults.buttonColors(containerColor = containerColor, disabledContainerColor = containerColor),
             contentPadding = contentPadding,
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier,
                 content = content
             )

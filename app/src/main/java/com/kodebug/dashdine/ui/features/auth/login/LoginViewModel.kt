@@ -90,6 +90,7 @@ class LoginViewModel @Inject constructor(override val apiService: DashDineApiSer
                 is ApiResponse.Success -> {
                     session.storeToken(response.data.token)
                     _uiState.value = LoginEvent.Success
+                    Log.d("TOKEN", response.data.token)
                     _navigationEvent.emit(LoginNavigationEvent.NavigationToHome)
                 }
 

@@ -1,5 +1,8 @@
 package com.kodebug.dashdine.ui.features.home
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -67,10 +72,12 @@ import com.kodebug.dashdine.ui.theme.Orange
 import kotlinx.coroutines.flow.collectLatest
 import java.nio.file.WatchEvent
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun HomeScreen(
+fun SharedTransitionScope.HomeScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
 
@@ -94,12 +101,12 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(top = 50.dp)
     ) {
 
         Column(
             modifier = modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(top = 50.dp),
         ) {
             when (uiState.value) {
                 HomeViewModel.HomeScreenState.Loading -> {
@@ -124,18 +131,29 @@ fun HomeScreen(
                         restaurants = restaurants,
                         onRestaurantSelected = {
                             viewModel.navigateToRestaurantDetail(it)
-                        }
+                        },
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
             }
         }
+//        val brush = Brush.verticalGradient(
+//            listOf(
+//                Orange.copy(alpha = .9f),
+//                Color.Transparent
+//            )
+//        )
+//        Box(modifier = modifier
+//            .fillMaxWidth()
+//            .height(60.dp)
+//            .align(Alignment.TopCenter)
+//            .background(brush = brush)
+//        )
     }
 }
 
 @Composable
 fun CategoriesList(categories: List<Category>, onCategorySelected: (Category) -> Unit, selectedItem: Category) {
-
-
     LazyRow(
         modifier = Modifier.height(166.dp),
         horizontalArrangement = Arrangement.spacedBy(18.dp)
@@ -159,8 +177,13 @@ fun CategoriesList(categories: List<Category>, onCategorySelected: (Category) ->
 }
 
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun RestaurantsList(restaurants: List<Restaurant>, onRestaurantSelected: (Restaurant) -> Unit) {
+fun SharedTransitionScope.RestaurantsList(
+    restaurants: List<Restaurant>,
+    onRestaurantSelected: (Restaurant) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -190,6 +213,7 @@ fun RestaurantsList(restaurants: List<Restaurant>, onRestaurantSelected: (Restau
                 RestaurantItem(
                     restaurant = rest,
                     onRestaurantSelected = { onRestaurantSelected(rest) },
+                    animatedVisibilityScope = animatedVisibilityScope
                 )
             }
             item {
@@ -256,8 +280,13 @@ fun CategoryItem(category: Category, onCategorySelected: (Category) -> Unit, isS
 }
 
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun RestaurantItem(restaurant: Restaurant, onRestaurantSelected: (Restaurant) -> Unit) {
+fun SharedTransitionScope.RestaurantItem(
+    restaurant: Restaurant,
+    onRestaurantSelected: (Restaurant) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     ItemCardLarge(
         item = restaurant,
         onClick = { onRestaurantSelected(it) },
@@ -280,13 +309,27 @@ fun RestaurantItem(restaurant: Restaurant, onRestaurantSelected: (Restaurant) ->
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(130.dp)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "image/${restaurant.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                        .clip(shape = RoundedCornerShape(20.dp))
                 )
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(14.dp), horizontalAlignment = Alignment.Start
                 ) {
-                    Text(text = restaurant.name, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Text(
+                        text = restaurant.name,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black,
+                        modifier = Modifier.sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "title/${restaurant.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -324,6 +367,10 @@ fun RestaurantItem(restaurant: Restaurant, onRestaurantSelected: (Restaurant) ->
                     modifier = Modifier
                         .height(32.dp)
                         .fillMaxWidth(.45f)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "rating/${restaurant.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
                 ) {
                     Text(text = "4.5", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     Spacer(modifier = Modifier.width(6.dp))
@@ -337,7 +384,6 @@ fun RestaurantItem(restaurant: Restaurant, onRestaurantSelected: (Restaurant) ->
                     Text(text = "(25+)", fontSize = 14.sp, color = Color.Gray)
                 }
             }
-
         }
     }
 }
@@ -360,28 +406,3 @@ fun RestaurantItem(restaurant: Restaurant, onRestaurantSelected: (Restaurant) ->
 //        )
 //    }
 //}
-
-@Preview(showBackground = true)
-@Composable
-private fun RestaurantItemPreview() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        RestaurantItem(
-            restaurant = Restaurant(
-                "",
-                "",
-                "",
-                id = "",
-                imageUrl = "",
-                latitude = 1.2,
-                longitude = 1.2,
-                name = "",
-                ownerId = "",
-                distance = 230.89
-            ), onRestaurantSelected = {}
-        )
-    }
-}

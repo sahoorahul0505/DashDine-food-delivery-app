@@ -98,6 +98,7 @@ abstract class BaseAuthViewModel(open val apiService: DashDineApiService) : View
             when(res){
                 is ApiResponse.Success -> {
                     onSocialLoginSuccess(token = res.data.token)
+                    Log.d("Token", "fetchDasDineAppToken: ${res.data.token}")
                 }
                 else -> {
                     val error = (res as? ApiResponse.Error)?.code

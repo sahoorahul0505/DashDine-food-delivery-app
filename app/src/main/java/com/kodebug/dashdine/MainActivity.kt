@@ -11,6 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,15 +22,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalOf
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.animation.doOnEnd
@@ -37,16 +50,23 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.kodebug.dashdine.data.DashDineApiService
 import com.kodebug.dashdine.data.DashDineSession
+import com.kodebug.dashdine.data.models.FoodItem
 import com.kodebug.dashdine.ui.features.auth.AuthScreen
 import com.kodebug.dashdine.ui.features.auth.login.LoginScreen
 import com.kodebug.dashdine.ui.features.auth.signup.SignUpScreen
+import com.kodebug.dashdine.ui.features.cart.CartScreen
+import com.kodebug.dashdine.ui.features.food_items_details.FoodDetailScreen
 import com.kodebug.dashdine.ui.features.home.HomeScreen
 import com.kodebug.dashdine.ui.features.restaurant_detail.RestaurantsDetailScreen
 import com.kodebug.dashdine.ui.navigation.Auth
+import com.kodebug.dashdine.ui.navigation.BottomNavItems
+import com.kodebug.dashdine.ui.navigation.Cart
+import com.kodebug.dashdine.ui.navigation.FoodDetail
 import com.kodebug.dashdine.ui.navigation.Home
 import com.kodebug.dashdine.ui.navigation.Login
 import com.kodebug.dashdine.ui.navigation.RestaurantDetail
 import com.kodebug.dashdine.ui.navigation.SignUp
+import com.kodebug.dashdine.ui.navigation.foodItemNavType
 import com.kodebug.dashdine.ui.theme.DashDineTheme
 import com.kodebug.dashdine.ui.theme.Orange
 import dagger.hilt.android.AndroidEntryPoint
@@ -55,6 +75,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.reflect.typeOf
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -65,6 +86,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var dashDineSession: DashDineSession
 
+    @OptIn(ExperimentalSharedTransitionApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().apply {
             setKeepOnScreenCondition {
@@ -101,59 +123,133 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DashDineTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding))
-                    val navController = rememberNavController()
-                    NavHost(
-                        navController = navController,
-                        startDestination = if (dashDineSession.getToken() != null) Home else Auth,
-                        enterTransition = {
-                            slideIntoContainer(
-                                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                                animationSpec = tween(600)
-                            ) + fadeIn(animationSpec = tween(1000))
-                        },
-                        exitTransition = {
-                            slideOutOfContainer(
-                                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                                animationSpec = tween(600)
-                            ) + fadeOut(animationSpec = tween(1000))
-                        },
-                        popEnterTransition = {
-                            slideIntoContainer(
-                                towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                                animationSpec = tween(600)
-                            ) + fadeIn(animationSpec = tween(1000))
-                        },
-                        popExitTransition = {
-                            slideOutOfContainer(
-                                towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                                animationSpec = tween(600)
-                            ) + fadeOut(animationSpec = tween(1000))
-                        }
-                    ) {
-                        composable<Auth> {
-                            AuthScreen(navController = navController)
-                        }
-                        composable<SignUp> {
-                            SignUpScreen(navController = navController)
-                        }
-                        composable<Login> {
-                            LoginScreen(navController = navController)
-                        }
-                        composable<Home> {
-                            HomeScreen(navController = navController)
-                        }
-                        composable<RestaurantDetail> {
-                            val route = it.toRoute<RestaurantDetail>()
-                            RestaurantsDetailScreen(
-                                navController = navController,
-                                restaurantID = route.restaurantID,
-                                imageUrl = route.restaurantImageUrls,
-                                name = route.restaurantName
-                            )
+
+
+                val shouldNavBarVisible = remember {
+                    mutableStateOf(false)
+                }
+                val navItems = listOf(
+                    BottomNavItems.Home,
+                    BottomNavItems.Cart,
+                    BottomNavItems.Notification
+                )
+                val navController = rememberNavController()
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = {
+                        AnimatedVisibility(visible = shouldNavBarVisible.value) {
+                            NavigationBar {
+                                navItems.forEach { item ->
+                                    NavigationBarItem(
+                                        selected = false,
+                                        onClick = {
+                                            navController.navigate(item.routes)
+                                        },
+                                        icon = {
+                                            Icon(
+                                                painter = painterResource(id = item.icon),
+                                                contentDescription = null
+                                            )
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
+                ) { innerPadding ->
+                    Box(modifier = Modifier.padding(innerPadding))
+                    SharedTransitionLayout {
+                        NavHost(
+                            navController = navController,
+                            startDestination = if (dashDineSession.getToken() != null) Home else Auth,
+                            enterTransition = {
+                                slideIntoContainer(
+                                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                                    animationSpec = tween(600)
+                                ) + fadeIn(animationSpec = tween(1000))
+                            },
+                            exitTransition = {
+                                slideOutOfContainer(
+                                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                                    animationSpec = tween(600)
+                                ) + fadeOut(animationSpec = tween(1000))
+                            },
+                            popEnterTransition = {
+                                slideIntoContainer(
+                                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                                    animationSpec = tween(600)
+                                ) + fadeIn(animationSpec = tween(1000))
+                            },
+                            popExitTransition = {
+                                slideOutOfContainer(
+                                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                                    animationSpec = tween(600)
+                                ) + fadeOut(animationSpec = tween(1000))
+                            }
+                        ) {
+                            composable<Auth> {
+                                shouldNavBarVisible.value = false
+                                AuthScreen(navController = navController)
+                            }
+                            composable<SignUp> {
+                                shouldNavBarVisible.value = false
+                                SignUpScreen(navController = navController)
+                            }
+                            composable<Login> {
+                                shouldNavBarVisible.value = false
+                                LoginScreen(navController = navController)
+                            }
+                            composable<Home> {
+                                shouldNavBarVisible.value = true
+                                HomeScreen(
+                                    navController = navController,
+                                    animatedVisibilityScope = this
+                                )
+                            }
+                            composable<RestaurantDetail> {
+                                shouldNavBarVisible.value = false
+                                val route = it.toRoute<RestaurantDetail>()
+                                RestaurantsDetailScreen(
+                                    navController = navController,
+                                    restaurantID = route.restaurantID,
+                                    imageUrl = route.restaurantImageUrls,
+                                    name = route.restaurantName,
+                                    animatedVisibilityScope = this,
+
+                                    )
+                            }
+
+                            composable<FoodDetail>(
+                                typeMap = mapOf(typeOf<FoodItem>() to foodItemNavType)
+                            ) {
+                                shouldNavBarVisible.value = false
+                                val route = it.toRoute<FoodDetail>()
+                                FoodDetailScreen(
+                                    navController = navController,
+                                    foodItem = route.foodItem,
+                                    animatedVisibilityScope = this
+                                )
+                            }
+
+                            composable<Cart> {
+                                shouldNavBarVisible.value = true
+                                CartScreen(navController = navController)
+                            }
+                        }
+                    }
+                    val brush = Brush.verticalGradient(
+                        listOf(
+                            Orange.copy(alpha = .9f),
+                            Color.Transparent
+                        )
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .background(brush = brush)
+                    )
 
 
 //                    AuthScreen()

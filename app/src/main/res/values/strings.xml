@@ -24,4 +24,5 @@
     <string name="fb_login_protocol_scheme">fb1234</string>
     <string name="facebook_client_token">43791cadc46947a1f061e4eec18e1a66</string>
     <string name="ok">Ok</string>
+    <string name="go_to_cart">Go to cart</string>
 </resources>

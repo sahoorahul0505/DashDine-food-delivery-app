@@ -1,10 +1,6 @@
 package com.kodebug.dashdine.data.models
 
-import kotlinx.serialization.Serializable
-
-
-@Serializable
-data class FoodItem(
+data class MenuItemId(
     val arModelUrl: String?,
     val createdAt: String,
     val description: String,

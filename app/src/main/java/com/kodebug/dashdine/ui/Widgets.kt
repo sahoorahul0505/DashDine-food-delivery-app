@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -219,6 +220,63 @@ fun DashDineErrorDialogBox(title: String, description: String, onDismiss: () -> 
     }
 }
 
+@Composable
+fun DashDineSuccessDialogBox(title: String, description: String, onDismiss: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = Color.White)
+            .clip(shape = RoundedCornerShape(16.dp))
+            .padding(horizontal = 20.dp, vertical = 30.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_cart),
+            contentDescription = "error",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(34.dp)
+                .shadow(
+                    elevation = 8.dp,
+                    shape = CircleShape,
+                    spotColor = Color.Green,
+                    ambientColor = Color.Green,
+                )
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        Text(
+            text = "${title}!",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            color = Orange
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(text = description, fontWeight = FontWeight.Normal, textAlign = TextAlign.Center, color = Color.Gray)
+        Spacer(modifier = Modifier.size(16.dp))
+        ShadowButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .fillMaxWidth(.6f)
+                .height(42.dp),
+//            shape = RoundedCornerShape(32.dp),
+            containerColor = Orange,
+            contentPadding = PaddingValues(vertical = 4.dp),
+            shadowColor = Orange.copy(alpha = .4f),
+            content = {
+                Text(
+                    text = stringResource(id = R.string.go_to_cart),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = Color.White
+                )
+            },
+        )
+    }
+}
+
 
 @Composable
 fun DashDineTextField(
@@ -291,7 +349,7 @@ fun DashDineTextField(
 @Composable
 @Preview(showBackground = true)
 fun DashDineDialogBoxPreview() {
-    DashDineErrorDialogBox(
+    DashDineSuccessDialogBox(
         title = "Error",
         description = "Something went wrong",
         onDismiss = {}
